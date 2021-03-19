@@ -2,7 +2,7 @@ int flagInput;
 int mainTimer;
 int secondTimer;
 int mainTimerTarget = 10;
-int secondTimerTarget = 60;
+int secondTimerTarget = 2;
 unsigned long temptTimer;
 bool gameRunning = false;
 bool delayStart = false;
@@ -11,6 +11,8 @@ int delayStartTimerTarget = 5;
 bool defence = false;
 int abortGameTimer;
 bool abortGame = false;
+int flagPin = 3;
+int signalPin = 5;
 
 
 void setup() {
@@ -18,10 +20,9 @@ void setup() {
   Serial.begin(9600);
   Serial.println("hello");
   //configure pin 2 as an input and enable the internal pull-up resistor
-  pinMode(2, INPUT_PULLUP);
+  pinMode(flagPin, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP);
-  pinMode(8, OUTPUT);
+  pinMode(signalPin, OUTPUT);
   pinMode(13, OUTPUT);
   flagInput = 0;
   temptTimer = 0;
@@ -30,23 +31,23 @@ void setup() {
   temptTimer = millis();
   abortGameTimer = 0;
 
+  startGame();
+  digitalWrite(signalPin, HIGH);
+  digitalWrite(13, LOW);
+
 }
 
 void loop() {
   updateTimer();
-  startGame();
+  
+  
   //read the pushbutton value into a variable
   readInput();
   //print out the value of the pushbutton
-  if (!flagInput) {
-    digitalWrite(13, HIGH);
-  } else {
-    digitalWrite(13, LOW);
-  }
   // Keep in mind the pull-up means the pushbutton's logic is inverted. It goes
   // HIGH when it's open, and LOW when it's pressed. Turn on pin 13 when the
   // button's pressed, and off when it's not:
-  if (mainTimer > mainTimerTarget || secondTimer > secondTimerTarget) {
+  if (secondTimer > secondTimerTarget) {
     endGame();
   }
 
@@ -54,28 +55,26 @@ void loop() {
 
 
 void readInput() {
-  flagInput = digitalRead(2);
-  delayStart = digitalRead(5);
+  flagInput = digitalRead(flagPin);
 }
 
 void updateTimer() {
   if (gameRunning && (millis() - temptTimer > 1000)) {
     temptTimer = millis();
-    startSignal();
-    if ((delayStartTimerTarget < delayStartTimer) || !delayStart) {
-      if (flagInput && mainTimer == 0) {
-        defence = true;
-      }
-      mainTimer++;
+    // startSignal();
 
-    } else {
-      delayStartTimer++;
+
+      mainTimer++;
+      digitalWrite(13, !digitalRead(13));
+
+    
+    if (!flagInput && mainTimer > 0 && !defence) {
+      secondTimer++;
+    } else if(defence && flagInput){
+      secondTimer++;
     }
-    if (flagInput && mainTimer > 0 && !defence ) {
-      secondTimer++;
-    } else if (!flagInput && mainTimer && defence > 0) {
-      secondTimer++;
-    } else {
+    
+    else {
       secondTimer = 0;
     }
     Serial.println(mainTimer);
@@ -88,25 +87,21 @@ void updateTimer() {
 
 }
 void startGame() {
-  if (!digitalRead(3)) {
-    if(gameRunning && mainTimer > 0){
-      if(!abortGame){
-      abortGameTimer = mainTimer;
-      abortGame = true;
-      }
-      if(abortGame && mainTimer - abortGameTimer > 2){
-      Serial.println("stop her");
-      endGame();
-      }
+
+    if(gameRunning){
+
     }
     else{
       
       gameRunning = true;
+      Serial.println("Defence");
+      
   }
-  }
-  else{
-    abortGame = false;
-  }
+        if (!digitalRead(flagPin)) {
+        defence = true;
+        Serial.println(defence);
+        Serial.println("************");
+      }
 }
 
 void endGame() {
@@ -133,10 +128,11 @@ void startSignal() {
 }
 void endSignal() {
   Serial.println("derp");
-  for (int i = 0; i < 3; i++) {
-    digitalWrite(8, HIGH);
+  for (int i = 0; i < 1; i++) {
+    digitalWrite(signalPin, LOW);
+    Serial.println("signal");
     delay(5000);
-    digitalWrite(8, LOW);
+    digitalWrite(signalPin, HIGH);
     delay(3000);
     Serial.println("stop");
   }
