@@ -1,7 +1,7 @@
 int flagInput;
 int mainTimer;
 int secondTimer;
-int mainTimerTarget = 900;
+int mainTimerTarget = 10;
 int secondTimerTarget = 60;
 unsigned long temptTimer;
 bool gameRunning = false;
